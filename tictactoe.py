@@ -41,6 +41,19 @@ class TicTacToeNode:
                     self.children.append(child)
                     child.generate_children()  # recursivo
 
+    def get_children(self):
+        if self.is_terminal():
+            return []
+        next_player = 'O' if self.player == 'X' else 'X'
+        children = []
+        for i in range(3):
+            for j in range(3):
+                if self.board[i][j] == ' ':
+                    new_board = [row.copy() for row in self.board]
+                    new_board[i][j] = self.player
+                    children.append(TicTacToeNode(new_board, next_player))
+        return children
+
     def print_board(self):
         for row in self.board:
             print('|'.join(row))
