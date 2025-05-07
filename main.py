@@ -3,9 +3,11 @@ import random
 from tictactoe import TicTacToeNode
 from minimax import MinimaxAgent, RandomAgent
 from montecarlo import MCTSAgent
+from minimax_prunning import MinimaxAlphaBetaAgent
+
 
 AGENT_TYPES_INTERACTIVE = {1: 'human', 2: 'random', 3: 'minimax', 4: 'mcts'}
-AGENT_TYPES_SIM = {1: 'random', 2: 'minimax', 3: 'mcts'}
+AGENT_TYPES_SIM = {1: 'random', 2: 'minimax', 3: 'mcts', 4: 'minimax_ab'}
 
 
 def play_game(player1_type='human', starting_player='X', max_depth=3, mcts_simulations=1000, mcts_exploration=1.4):
@@ -56,18 +58,25 @@ def play_game(player1_type='human', starting_player='X', max_depth=3, mcts_simul
 
 def simulate_agents(N=1000, starting_player='X', max_depth=3, mcts_simulations=500, mcts_exploration=1.4):
     print("Agente X:")
-    print("1. Aleatorio  2. Minimax  3. MCTS")
-    choice_x = int(input("Tipo de X (1-3): "))
-    agent_x_type = AGENT_TYPES_SIM.get(choice_x)
+    print("1. Aleatorio  2. Minimax  3. MCTS  4. Minimax AB")
+    choice_x = int(input("Tipo de X (1-4): "))
+    ...
     print("Agente O:")
-    print("1. Aleatorio  2. Minimax  3. MCTS")
-    choice_o = int(input("Tipo de O (1-3): "))
+    print("1. Aleatorio  2. Minimax  3. MCTS  4. Minimax AB")
+    choice_o = int(input("Tipo de O (1-4): "))
+    agent_x_type = AGENT_TYPES_SIM.get(choice_x)
+
     agent_o_type = AGENT_TYPES_SIM.get(choice_o)
 
     def make_agent(t):
-        if t == 'random': return RandomAgent()
-        if t == 'minimax': return MinimaxAgent(max_depth)
+        if t == 'random':
+            return RandomAgent()
+        if t == 'minimax':
+            return MinimaxAgent(max_depth)
+        if t == 'minimax_ab':
+            return MinimaxAlphaBetaAgent(max_depth)
         return MCTSAgent(simulations=mcts_simulations, exploration_const=mcts_exploration)
+
 
     agent_x = make_agent(agent_x_type)
     agent_o = make_agent(agent_o_type)
@@ -78,8 +87,10 @@ def simulate_agents(N=1000, starting_player='X', max_depth=3, mcts_simulations=5
 
     for _ in range(N):
         game = TicTacToeNode(player=starting_player)
-        if isinstance(agent_x, MinimaxAgent): agent_x.nodes_explored = 0
-        if isinstance(agent_o, MinimaxAgent): agent_o.nodes_explored = 0
+        if isinstance(agent_x, (MinimaxAgent, MinimaxAlphaBetaAgent)):
+            agent_x.nodes_explored = 0
+        if isinstance(agent_o, (MinimaxAgent, MinimaxAlphaBetaAgent)):
+            agent_o.nodes_explored = 0
 
         current = starting_player
         while not game.is_terminal():
@@ -87,14 +98,14 @@ def simulate_agents(N=1000, starting_player='X', max_depth=3, mcts_simulations=5
             if current == 'X':
                 if agent_x_type == 'random':
                     move = agent_x.select_move(game)
-                elif agent_x_type == 'minimax':
+                elif agent_x_type in ['minimax', 'minimax_ab']:
                     move = agent_x.best_move(game)
                 else:
                     move = agent_x.choose(game)
             else:
                 if agent_o_type == 'random':
                     move = agent_o.select_move(game)
-                elif agent_o_type == 'minimax':
+                elif agent_o_type in ['minimax', 'minimax_ab']:
                     move = agent_o.best_move(game)
                 else:
                     move = agent_o.choose(game)
@@ -105,8 +116,10 @@ def simulate_agents(N=1000, starting_player='X', max_depth=3, mcts_simulations=5
 
         winner = game.check_winner()
         results[winner or 'draw'] += 1
-        if isinstance(agent_x, MinimaxAgent): total_nodes += agent_x.nodes_explored
-        if isinstance(agent_o, MinimaxAgent): total_nodes += agent_o.nodes_explored
+        if isinstance(agent_x, (MinimaxAgent, MinimaxAlphaBetaAgent)):
+            total_nodes += agent_x.nodes_explored
+        if isinstance(agent_o, (MinimaxAgent, MinimaxAlphaBetaAgent)):
+            total_nodes += agent_o.nodes_explored
 
     print(f"X ganó: {results['X']}, O ganó: {results['O']}, Empates: {results['draw']}")
     print(f"Tiempo medio por jugada: {total_time/(N*5):.4f}s")
